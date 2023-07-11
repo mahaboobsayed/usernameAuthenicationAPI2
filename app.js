@@ -25,18 +25,18 @@ const validatepassword = (password) => {
 //API 1
 app.post("/register", async (request, response) => {
   const { username, name, password, gender, location } = request.body;
-  const hashedpassword = await bcyrpt.hash(password, 10);
+  const hashedpassword = await bcrypt.hash(password, 10);
   const dbQuery = `SELECT *
   FROM
   user
   WHERE
-  username='${username}'`;
+  username ='${username}'`;
   const userdetails = await db.get(dbQuery);
   if (userdetails === undefined) {
-    const newuserQuery = `INSERT INTO user [(username,name,password,gender,location)]
-      VALUES('${username}','${name}','${hashedpassword}','${gender}','${location}')`;
+    const newuserQuery = `INSERT INTO user (username,name,password,gender,location)
+      VALUES('${username}','${name}','${hashedpassword}','${gender}','${location}');`;
     if (validatepassword(password)) {
-      await db.run(dbQuery);
+      await db.run(newuserQuery);
       response.send("User created successfully");
     } else {
       response.status(400);
@@ -61,7 +61,7 @@ app.post("/login", async (request, response) => {
     response.status(400);
     response.send("Invalid user");
   } else {
-    const passwordmatched = bcrypt.compare(password, userDb.password);
+    const passwordmatched = await bcrypt.compare(password, userDb.password);
     if (passwordmatched === true) {
       response.send("Login success");
     } else {
@@ -82,16 +82,19 @@ app.put("/change-password", async (request, response) => {
     response.status(400);
     response.send("Invalid user");
   } else {
-    const ispasswordmatched = bcrypt.compare(oldPassword, userdetails.password);
+    const ispasswordmatched = await bcrypt.compare(
+      oldPassword,
+      userdetails.password
+    );
     if (ispasswordmatched === true) {
       if (validatepassword(newPassword)) {
-        const hashedpassword = bcrypt.hash(newPassword, 10);
+        const hashedpassword = await bcrypt.hash(newPassword, 10);
         const updatePasswordQuery = `UPDATE user
                   SET password='${hashedpassword}'
                   WHERE
                   username='${username}'`;
         const user = await db.run(updatePasswordQuery);
-        response.send("Successful password update");
+        response.send("Password updated");
       } else {
         response.status(400);
         response.send("Password is too short");
